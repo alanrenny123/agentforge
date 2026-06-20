@@ -5,3 +5,4 @@ web3>=7.0
 eth-account>=0.13
 requests>=2.31
 flask-cors>=4.0
+gunicorn>=22.0
