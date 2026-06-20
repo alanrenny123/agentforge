@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AgentForge — Build AI Agents on 0G</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div id="app">
+        <!-- ─── Header ─────────────────────────────────────────── -->
+        <header class="header">
+            <div class="header-left">
+                <div class="logo">
+                    <span class="logo-icon">⚡</span>
+                    <span class="logo-text">AgentForge</span>
+                </div>
+                <span class="header-badge">on 0G</span>
+            </div>
+            <div class="header-right">
+                <div class="status-indicator" id="statusIndicator">
+                    <span class="status-dot"></span>
+                    <span class="status-text">Checking...</span>
+                </div>
+                <button class="btn btn-ghost" onclick="showSettingsModal()"><span id="apiKeyIndicator" class="api-key-indicator no-key" title="No API key set"></span> API Key</button>
+                <button class="btn btn-ghost" onclick="showStatusModal()">🔗 Network</button>
+            </div>
+        </header>
+
+        <!-- ─── Main Content ───────────────────────────────────── -->
+        <main class="main">
+            <!-- Sidebar: Agent List -->
+            <aside class="sidebar" id="sidebar">
+                <div class="sidebar-header">
+                    <h2>My Agents</h2>
+                    <button class="btn btn-primary btn-sm" onclick="showCreateModal()">+ New Agent</button>
+                </div>
+                <div class="agent-list" id="agentList">
+                    <div class="empty-state">
+                        <p>No agents yet</p>
+                        <p class="text-muted">Create your first AI agent powered by 0G</p>
+                    </div>
+                </div>
+            </aside>
+
+            <!-- Chat Area -->
+            <section class="chat-area" id="chatArea">
+                <!-- Welcome Screen -->
+                <div class="welcome-screen" id="welcomeScreen">
+                    <div class="welcome-content">
+                        <h1>⚡ AgentForge</h1>
+                        <p class="welcome-subtitle">Build, deploy, and interact with AI agents powered by 0G's decentralized infrastructure</p>
+                        
+                        <div class="feature-grid">
+                            <div class="feature-card">
+                                <div class="feature-icon">🧠</div>
+                                <h3>0G Compute</h3>
+                                <p>Agents run inference through decentralized AI providers on 0G's network</p>
+                            </div>
+                            <div class="feature-card">
+                                <div class="feature-icon">💾</div>
+                                <h3>0G Storage</h3>
+                                <p>Agent configs and memory persist on decentralized storage — always available</p>
+                            </div>
+                            <div class="feature-card">
+                                <div class="feature-icon">⛓️</div>
+                                <h3>0G Chain</h3>
+                                <p>Mint agent NFTs on-chain for provenance, ownership, and transferability</p>
+                            </div>
+                        </div>
+
+                        <button class="btn btn-primary btn-lg" onclick="showCreateModal()">
+                            Create Your First Agent →
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Active Chat (hidden by default) -->
+                <div class="chat-active" id="chatActive" style="display:none;">
+                    <div class="chat-header" id="chatHeader">
+                        <div class="chat-header-left">
+                            <button class="btn btn-ghost btn-sm" onclick="goBack()">← Back</button>
+                            <div class="chat-agent-info">
+                                <span class="chat-agent-name" id="chatAgentName">Agent</span>
+                                <span class="chat-agent-type" id="chatAgentType">custom</span>
+                            </div>
+                        </div>
+                        <div class="chat-header-right">
+                            <button class="btn btn-ghost btn-sm" onclick="showAgentDetails()">ℹ️ Details</button>
+                        </div>
+                    </div>
+                    <div class="chat-messages" id="chatMessages">
+                        <!-- Messages rendered here -->
+                    </div>
+                    <div class="chat-input-area">
+                        <div class="chat-input-wrapper">
+                            <textarea id="chatInput" placeholder="Message your agent..." rows="1" 
+                                      onkeydown="handleKeyDown(event)"></textarea>
+                            <button class="btn btn-primary btn-send" id="sendBtn" onclick="sendMessage()">
+                                Send
+                            </button>
+                        </div>
+                        <p class="chat-footer">Responses powered by 0G Compute · Memory stored on 0G Storage</p>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <!-- ─── Create Agent Modal ─────────────────────────────── -->
+        <div class="modal-overlay" id="createModal" style="display:none;">
+            <div class="modal">
+                <div class="modal-header">
+                    <h2>Create New Agent</h2>
+                    <button class="btn btn-ghost btn-sm" onclick="closeModal('createModal')">✕</button>
+                </div>
+                <div class="modal-body">
+                    <!-- Template Selection -->
+                    <div class="template-grid" id="templateGrid">
+                        <!-- Templates rendered here -->
+                    </div>
+
+                    <!-- Agent Config Form -->
+                    <div class="form-section" id="agentForm" style="display:none;">
+                        <div class="form-group">
+                            <label>Agent Name</label>
+                            <input type="text" id="agentName" placeholder="e.g. My Code Buddy" class="form-input">
+                        </div>
+                        <div class="form-group">
+                            <label>System Prompt</label>
+                            <textarea id="agentSystemPrompt" rows="4" class="form-input" 
+                                      placeholder="Define your agent's behavior and expertise..."></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label>Personality</label>
+                            <input type="text" id="agentPersonality" class="form-input" 
+                                   placeholder="e.g. friendly, precise, creative">
+                        </div>
+                        <div class="form-group">
+                            <label>Owner Wallet (optional — enables NFT minting)</label>
+                            <input type="text" id="agentOwner" class="form-input" 
+                                   placeholder="0x...">
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer" id="modalFooter">
+                    <button class="btn btn-ghost" onclick="closeModal('createModal')">Cancel</button>
+                    <button class="btn btn-primary" id="createBtn" onclick="createAgent()" style="display:none;">
+                        ⚡ Create & Store on 0G
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ─── Status Modal ───────────────────────────────────── -->
+        <div class="modal-overlay" id="statusModal" style="display:none;">
+            <div class="modal modal-sm">
+                <div class="modal-header">
+                    <h2>Network Status</h2>
+                    <button class="btn btn-ghost btn-sm" onclick="closeModal('statusModal')">✕</button>
+                </div>
+                <div class="modal-body">
+                    <div class="status-grid" id="statusGrid">
+                        <div class="status-card">
+                            <h4>🧠 0G Compute</h4>
+                            <span class="badge" id="computeStatus">—</span>
+                        </div>
+                        <div class="status-card">
+                            <h4>💾 0G Storage</h4>
+                            <span class="badge" id="storageStatus">—</span>
+                        </div>
+                        <div class="status-card">
+                            <h4>⛓️ 0G Chain</h4>
+                            <span class="badge" id="chainStatus">—</span>
+                        </div>
+                    </div>
+                    <div id="statusDetails" class="status-details"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ─── Agent Details Modal ────────────────────────────── -->
+        <div class="modal-overlay" id="detailsModal" style="display:none;">
+            <div class="modal modal-sm">
+                <div class="modal-header">
+                    <h2>Agent Details</h2>
+                    <button class="btn btn-ghost btn-sm" onclick="closeModal('detailsModal')">✕</button>
+                </div>
+                <div class="modal-body" id="detailsBody">
+                    <!-- Filled dynamically -->
+                </div>
+            </div>
+        </div>
+
+        <!-- ─── Settings Modal (API Key) ──────────────────────── -->
+        <div class="modal-overlay" id="settingsModal" style="display:none;">
+            <div class="modal modal-sm">
+                <div class="modal-header">
+                    <h2>⚙️ API Key Settings</h2>
+                    <button class="btn btn-ghost btn-sm" onclick="closeModal('settingsModal')">✕</button>
+                </div>
+                <div class="modal-body">
+                    <p class="settings-description">
+                        Enter your own 0G Compute API key to use the chat. Your key is stored 
+                        <strong>only in your browser</strong> (localStorage) and never sent to our server 
+                        — it goes directly to 0G Compute with each request.
+                    </p>
+                    <div class="api-key-help">
+                        <p>Don't have an API key yet?</p>
+                        <a href="https://pc.0g.ai" target="_blank" rel="noopener" class="btn btn-outline btn-sm">
+                            🔑 Get your API key at pc.0g.ai →
+                        </a>
+                        <p class="text-muted text-xs">Sign in → Dashboard → API Keys → Create new key (starts with <code>sk-</code>)</p>
+                    </div>
+                    <div class="form-group">
+                        <label for="apiKeyInput">0G Compute API Key</label>
+                        <div class="api-key-wrapper">
+                            <input type="password" id="apiKeyInput" class="form-input" 
+                                   placeholder="Enter your API key...">
+                            <button class="btn btn-ghost btn-sm" onclick="toggleApiKeyVisibility()" id="toggleKeyBtn">👁️</button>
+                        </div>
+                    </div>
+                    <div class="settings-status" id="settingsStatus"></div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-ghost" onclick="clearApiKey()">Clear Key</button>
+                    <button class="btn btn-primary" onclick="saveApiKey()">💾 Save Key</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/app.js"></script>
+</body>
+</html>
