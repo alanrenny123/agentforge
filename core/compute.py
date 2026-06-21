@@ -72,13 +72,27 @@ def chat_completion_streaming(
 
 def test_connection() -> dict:
     """Test connectivity to 0G Compute Router."""
+    api_key = os.getenv("OG_COMPUTE_API_KEY", "")
+    if not api_key:
+        return {
+            "status": "ready",
+            "message": "0G Compute is available. Enter your API key to start chatting.",
+            "endpoint": os.getenv("OG_COMPUTE_BASE_URL", "https://router-api.0g.ai/v1"),
+        }
     try:
         client = get_client()
         models = client.models.list()
         return {
             "status": "connected",
-            "endpoint": os.getenv("OG_COMPUTE_BASE_URL"),
+            "endpoint": os.getenv("OG_COMPUTE_BASE_URL", "https://router-api.0g.ai/v1"),
             "models_available": len(models.data),
         }
     except Exception as e:
-        return {"status": "error", "error": str(e)}
+        error_msg = str(e)
+        if "402" in error_msg or "insufficient_balance" in error_msg:
+            return {
+                "status": "ready",
+                "message": "0G Compute is available. Your API key needs credits — add them at pc.0g.ai",
+                "endpoint": os.getenv("OG_COMPUTE_BASE_URL", "https://router-api.0g.ai/v1"),
+            }
+        return {"status": "error", "error": error_msg}

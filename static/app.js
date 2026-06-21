@@ -390,7 +390,11 @@ async function sendMessage() {
         }
     } catch (err) {
         removeTypingIndicator(typingId);
-        appendMessage("error", "Failed to get response: " + err.message);
+        let errorMsg = err.message;
+        if (errorMsg.includes("402") || errorMsg.includes("insufficient_balance") || errorMsg.includes("Insufficient balance")) {
+            errorMsg = "Your 0G Compute API key has insufficient balance. Please add credits at pc.0g.ai and try again.";
+        }
+        appendMessage("error", errorMsg);
     } finally {
         isStreaming = false;
         document.getElementById("sendBtn").disabled = false;
@@ -506,16 +510,19 @@ async function checkStatus() {
         const dot = document.querySelector(".status-dot");
         const text = document.querySelector(".status-text");
 
-        const allOk =
-            status.compute?.status === "connected" &&
-            status.chain?.status === "connected";
+        const computeOk = status.compute?.status === "connected" || status.compute?.status === "ready";
+        const chainOk = status.chain?.status === "connected";
+        const storageOk = status.storage?.status === "ready";
 
-        if (allOk) {
+        if (computeOk && storageOk) {
             dot.className = "status-dot connected";
-            text.textContent = "All systems online";
-        } else {
+            text.textContent = chainOk ? "All systems online" : "Compute & Storage online";
+        } else if (computeOk || storageOk) {
             dot.className = "status-dot";
             text.textContent = "Partial connectivity";
+        } else {
+            dot.className = "status-dot error";
+            text.textContent = "Offline";
         }
     } catch {
         document.querySelector(".status-dot").className = "status-dot error";
@@ -538,8 +545,9 @@ async function showStatusModal() {
 
         // Compute
         const cs = document.getElementById("computeStatus");
-        cs.textContent = status.compute?.status === "connected" ? "Connected" : "Error";
-        cs.className = `badge ${status.compute?.status === "connected" ? "connected" : "error"}`;
+        const computeOk = status.compute?.status === "connected" || status.compute?.status === "ready";
+        cs.textContent = computeOk ? (status.compute?.status === "connected" ? "Connected" : "Ready") : "Error";
+        cs.className = `badge ${computeOk ? "connected" : "error"}`;
 
         // Storage
         const ss = document.getElementById("storageStatus");
@@ -554,6 +562,9 @@ async function showStatusModal() {
 
         // Details
         let details = "";
+        if (status.compute?.message) {
+            details += `<p style="color:var(--text-muted);">${status.compute.message}</p>`;
+        }
         if (status.compute?.models_available) {
             details += `<p>Models available: <code>${status.compute.models_available}</code></p>`;
         }
