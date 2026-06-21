@@ -5,6 +5,8 @@ Supported providers:
   - OpenRouter
   - OpenAI
   - Anthropic
+  - Groq (FREE — no credit card)
+  - Google Gemini (FREE — no credit card)
   - Any OpenAI-compatible endpoint (custom)
 """
 
@@ -38,6 +40,18 @@ PROVIDERS = {
         "base_url": "https://api.anthropic.com/v1/",
         "default_model": "claude-sonnet-4-20250514",
         "icon": "🟠",
+    },
+    "groq": {
+        "name": "Groq (Free)",
+        "base_url": "https://api.groq.com/openai/v1",
+        "default_model": "llama-3.3-70b-versatile",
+        "icon": "⚡",
+    },
+    "gemini": {
+        "name": "Google Gemini (Free)",
+        "base_url": "https://generativelanguage.googleapis.com/v1beta/openai/",
+        "default_model": "gemini-2.5-flash",
+        "icon": "💎",
     },
     "custom": {
         "name": "Custom (OpenAI-compatible)",

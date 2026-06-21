@@ -17,6 +17,8 @@ const PROVIDER_INFO = {
     "openrouter": { label: "OpenRouter",      placeholder: "sk-or-...", helpUrl: "https://openrouter.ai/keys", helpText: "Get your API key at openrouter.ai →", defaultModelHint: "Default: auto-selects best model" },
     "openai":     { label: "OpenAI",          placeholder: "sk-...", helpUrl: "https://platform.openai.com/api-keys", helpText: "Get your API key at platform.openai.com →", defaultModelHint: "Default: gpt-4o" },
     "anthropic":  { label: "Anthropic",       placeholder: "sk-ant-...", helpUrl: "https://console.anthropic.com/", helpText: "Get your API key at console.anthropic.com →", defaultModelHint: "Default: claude-sonnet-4-20250514" },
+    "groq":       { label: "Groq (Free)",      placeholder: "gsk_...", helpUrl: "https://console.groq.com/keys", helpText: "FREE — no credit card needed. Get key at console.groq.com →", defaultModelHint: "Default: llama-3.3-70b-versatile" },
+    "gemini":     { label: "Google Gemini (Free)", placeholder: "AIza...", helpUrl: "https://aistudio.google.com/apikey", helpText: "FREE — no credit card needed. Get key at aistudio.google.com →", defaultModelHint: "Default: gemini-2.5-flash" },
     "custom":     { label: "Custom Provider", placeholder: "Enter API key", helpUrl: "", helpText: "", defaultModelHint: "Enter model name and base URL" },
 };
 
