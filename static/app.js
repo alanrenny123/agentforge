@@ -208,6 +208,7 @@ function renderAgentList() {
 
 async function selectAgent(agentId) {
     currentAgentId = agentId;
+    closeSidebar();
     renderAgentList();
 
     const info = await api(`/api/agents/${agentId}`);
@@ -669,6 +670,22 @@ async function showStatusModal() {
     } catch (err) {
         document.getElementById("statusDetails").innerHTML = `<p style="color:var(--red);">Error: ${err.message}</p>`;
     }
+}
+
+// ─── Sidebar Toggle (Mobile) ───────────────────────────────────────
+
+function toggleSidebar() {
+    const sidebar = document.getElementById("sidebar");
+    const overlay = document.getElementById("sidebarOverlay");
+    sidebar.classList.toggle("open");
+    overlay.classList.toggle("active");
+}
+
+function closeSidebar() {
+    const sidebar = document.getElementById("sidebar");
+    const overlay = document.getElementById("sidebarOverlay");
+    sidebar.classList.remove("open");
+    overlay.classList.remove("active");
 }
 
 // ─── Modals ─────────────────────────────────────────────────────────

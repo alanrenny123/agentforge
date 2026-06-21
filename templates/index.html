@@ -12,6 +12,7 @@
         <!-- ─── Header ─────────────────────────────────────────── -->
         <header class="header">
             <div class="header-left">
+                <button class="hamburger" id="hamburger" onclick="toggleSidebar()" aria-label="Toggle menu">☰</button>
                 <div class="logo">
                     <span class="logo-icon">⚡</span>
                     <span class="logo-text">AgentForge</span>
@@ -27,6 +28,7 @@
                 <button class="btn btn-ghost" onclick="showStatusModal()">🔗 Network</button>
             </div>
         </header>
+        <div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
 
         <!-- ─── Main Content ───────────────────────────────────── -->
         <main class="main">
