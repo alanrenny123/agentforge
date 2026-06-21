@@ -192,39 +192,64 @@
             </div>
         </div>
 
-        <!-- ─── Settings Modal (API Key) ──────────────────────── -->
+        <!-- ─── Settings Modal (API Key + Provider) ────────────── -->
         <div class="modal-overlay" id="settingsModal" style="display:none;">
             <div class="modal modal-sm">
                 <div class="modal-header">
-                    <h2>⚙️ API Key Settings</h2>
+                    <h2>⚙️ AI Provider Settings</h2>
                     <button class="btn btn-ghost btn-sm" onclick="closeModal('settingsModal')">✕</button>
                 </div>
                 <div class="modal-body">
                     <p class="settings-description">
-                        Enter your own 0G Compute API key to use the chat. Your key is stored 
+                        Choose your AI provider and enter your API key. Your key is stored 
                         <strong>only in your browser</strong> (localStorage) and never sent to our server 
-                        — it goes directly to 0G Compute with each request.
+                        — it goes directly to the provider with each request.
                     </p>
-                    <div class="api-key-help">
-                        <p>Don't have an API key yet?</p>
-                        <a href="https://pc.0g.ai" target="_blank" rel="noopener" class="btn btn-outline btn-sm">
-                            🔑 Get your API key at pc.0g.ai →
-                        </a>
-                        <p class="text-muted text-xs">Sign in → Dashboard → API Keys → Create new key (starts with <code>sk-</code>)</p>
-                    </div>
+
                     <div class="form-group">
-                        <label for="apiKeyInput">0G Compute API Key</label>
+                        <label for="providerSelect">AI Provider</label>
+                        <select id="providerSelect" class="form-input" onchange="onProviderChange()">
+                            <option value="0g">0G Compute (Free Tier)</option>
+                            <option value="openrouter">OpenRouter</option>
+                            <option value="openai">OpenAI</option>
+                            <option value="anthropic">Anthropic</option>
+                            <option value="custom">Custom (OpenAI-compatible)</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group" id="apiKeyGroup">
+                        <label for="apiKeyInput" id="apiKeyLabel">API Key</label>
                         <div class="api-key-wrapper">
                             <input type="password" id="apiKeyInput" class="form-input" 
                                    placeholder="Enter your API key...">
                             <button class="btn btn-ghost btn-sm" onclick="toggleApiKeyVisibility()" id="toggleKeyBtn">👁️</button>
                         </div>
+                        <div class="api-key-help" id="apiKeyHelp">
+                            <p>Don't have an API key yet?</p>
+                            <a href="https://pc.0g.ai" target="_blank" rel="noopener" class="btn btn-outline btn-sm" id="getApiKeyLink">
+                                🔑 Get your API key →
+                            </a>
+                        </div>
                     </div>
+
+                    <div class="form-group" id="modelGroup">
+                        <label for="modelInput">Model (optional)</label>
+                        <input type="text" id="modelInput" class="form-input" 
+                               placeholder="Leave empty for default">
+                        <p class="text-muted text-xs" id="modelHint">Default: 0G's best available model</p>
+                    </div>
+
+                    <div class="form-group" id="baseUrlGroup" style="display:none;">
+                        <label for="baseUrlInput">Base URL</label>
+                        <input type="text" id="baseUrlInput" class="form-input" 
+                               placeholder="https://api.example.com/v1">
+                    </div>
+
                     <div class="settings-status" id="settingsStatus"></div>
                 </div>
                 <div class="modal-footer">
-                    <button class="btn btn-ghost" onclick="clearApiKey()">Clear Key</button>
-                    <button class="btn btn-primary" onclick="saveApiKey()">💾 Save Key</button>
+                    <button class="btn btn-ghost" onclick="clearApiKey()">Clear</button>
+                    <button class="btn btn-primary" onclick="saveApiKey()">💾 Save</button>
                 </div>
             </div>
         </div>

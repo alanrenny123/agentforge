@@ -82,7 +82,10 @@ def api_chat(agent_id):
         return jsonify({"error": "Message is required"}), 400
 
     api_key = data.get("api_key", "").strip() or None
-    result = agents.chat_with_agent(agent_id, message, api_key=api_key)
+    provider = data.get("provider", "0g").strip()
+    base_url = data.get("base_url", "").strip() or None
+    model = data.get("model", "").strip() or None
+    result = agents.chat_with_agent(agent_id, message, api_key=api_key, provider=provider, base_url=base_url, model_override=model)
     if result.get("status") == "error":
         return jsonify(result), 400
     return jsonify(result)
@@ -97,9 +100,12 @@ def api_chat_stream(agent_id):
         return jsonify({"error": "Message is required"}), 400
 
     api_key = data.get("api_key", "").strip() or None
+    provider = data.get("provider", "0g").strip()
+    base_url = data.get("base_url", "").strip() or None
+    model = data.get("model", "").strip() or None
 
     def generate():
-        for chunk in agents.chat_with_agent_streaming(agent_id, message, api_key=api_key):
+        for chunk in agents.chat_with_agent_streaming(agent_id, message, api_key=api_key, provider=provider, base_url=base_url, model_override=model):
             yield f"data: {json.dumps({'chunk': chunk})}\n\n"
         yield f"data: {json.dumps({'done': True})}\n\n"
 
@@ -129,6 +135,12 @@ def api_models():
         return jsonify(compute.list_models())
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/providers")
+def api_providers():
+    """List available AI providers."""
+    return jsonify(compute.list_providers())
 
 
 # ─── Run ─────────────────────────────────────────────────────────────────────

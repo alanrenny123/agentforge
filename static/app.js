@@ -10,37 +10,104 @@ let selectedTemplate = null;
 let templates = [];
 let isStreaming = false;
 
-// ─── API Key Management ────────────────────────────────────────────
+// ─── Provider & API Key Management ────────────────────────────────
+
+const PROVIDER_INFO = {
+    "0g":         { label: "0G Compute",     placeholder: "sk-...", helpUrl: "https://pc.0g.ai", helpText: "Get your API key at pc.0g.ai →", defaultModelHint: "Default: 0G's best available model" },
+    "openrouter": { label: "OpenRouter",      placeholder: "sk-or-...", helpUrl: "https://openrouter.ai/keys", helpText: "Get your API key at openrouter.ai →", defaultModelHint: "Default: auto-selects best model" },
+    "openai":     { label: "OpenAI",          placeholder: "sk-...", helpUrl: "https://platform.openai.com/api-keys", helpText: "Get your API key at platform.openai.com →", defaultModelHint: "Default: gpt-4o" },
+    "anthropic":  { label: "Anthropic",       placeholder: "sk-ant-...", helpUrl: "https://console.anthropic.com/", helpText: "Get your API key at console.anthropic.com →", defaultModelHint: "Default: claude-sonnet-4-20250514" },
+    "custom":     { label: "Custom Provider", placeholder: "Enter API key", helpUrl: "", helpText: "", defaultModelHint: "Enter model name and base URL" },
+};
+
+function getProvider() {
+    return localStorage.getItem("agentforge_provider") || "0g";
+}
 
 function getApiKey() {
     return localStorage.getItem("agentforge_api_key") || "";
 }
 
+function getModel() {
+    return localStorage.getItem("agentforge_model") || "";
+}
+
+function getBaseUrl() {
+    return localStorage.getItem("agentforge_base_url") || "";
+}
+
 function showSettingsModal() {
+    const provider = getProvider();
+    document.getElementById("providerSelect").value = provider;
     document.getElementById("apiKeyInput").value = getApiKey();
+    document.getElementById("modelInput").value = getModel();
+    document.getElementById("baseUrlInput").value = getBaseUrl();
     document.getElementById("settingsStatus").innerHTML = "";
+    onProviderChange();
     openModal("settingsModal");
 }
 
+function onProviderChange() {
+    const provider = document.getElementById("providerSelect").value;
+    const info = PROVIDER_INFO[provider] || PROVIDER_INFO["custom"];
+
+    // Update API key placeholder and help link
+    document.getElementById("apiKeyInput").placeholder = info.placeholder;
+    const helpDiv = document.getElementById("apiKeyHelp");
+    const link = document.getElementById("getApiKeyLink");
+    if (info.helpUrl) {
+        helpDiv.style.display = "block";
+        link.href = info.helpUrl;
+        link.textContent = info.helpText;
+    } else {
+        helpDiv.style.display = "none";
+    }
+
+    // Update model hint
+    document.getElementById("modelHint").textContent = info.defaultModelHint;
+
+    // Show/hide base URL for custom provider
+    document.getElementById("baseUrlGroup").style.display = provider === "custom" ? "block" : "none";
+}
+
 function saveApiKey() {
+    const provider = document.getElementById("providerSelect").value;
     const key = document.getElementById("apiKeyInput").value.trim();
+    const model = document.getElementById("modelInput").value.trim();
+    const baseUrl = document.getElementById("baseUrlInput").value.trim();
+
     if (!key) {
         document.getElementById("settingsStatus").innerHTML = 
             '<span style="color:var(--red);">⚠️ Please enter a key</span>';
         return;
     }
+    if (provider === "custom" && !baseUrl) {
+        document.getElementById("settingsStatus").innerHTML = 
+            '<span style="color:var(--red);">⚠️ Custom provider requires a Base URL</span>';
+        return;
+    }
+
+    localStorage.setItem("agentforge_provider", provider);
     localStorage.setItem("agentforge_api_key", key);
+    localStorage.setItem("agentforge_model", model);
+    localStorage.setItem("agentforge_base_url", baseUrl);
+
     document.getElementById("settingsStatus").innerHTML = 
-        '<span style="color:var(--green);">✅ Key saved! You can now chat with agents.</span>';
+        '<span style="color:var(--green);">✅ Saved! You can now chat with agents.</span>';
     updateApiKeyIndicator();
     setTimeout(() => closeModal("settingsModal"), 1200);
 }
 
 function clearApiKey() {
+    localStorage.removeItem("agentforge_provider");
     localStorage.removeItem("agentforge_api_key");
+    localStorage.removeItem("agentforge_model");
+    localStorage.removeItem("agentforge_base_url");
     document.getElementById("apiKeyInput").value = "";
+    document.getElementById("modelInput").value = "";
+    document.getElementById("baseUrlInput").value = "";
     document.getElementById("settingsStatus").innerHTML = 
-        '<span style="color:var(--text-muted);">Key cleared. You\'ll need to enter one to chat.</span>';
+        '<span style="color:var(--text-muted);">Cleared. You\'ll need to enter credentials to chat.</span>';
     updateApiKeyIndicator();
 }
 
@@ -60,9 +127,11 @@ function updateApiKeyIndicator() {
     const indicator = document.getElementById("apiKeyIndicator");
     if (!indicator) return;
     const key = getApiKey();
+    const provider = getProvider();
     if (key) {
         indicator.className = "api-key-indicator has-key";
-        indicator.title = "API key set (click to change)";
+        const info = PROVIDER_INFO[provider];
+        indicator.title = `${info?.label || provider} key set (click to change)`;
     } else {
         indicator.className = "api-key-indicator no-key";
         indicator.title = "No API key — click to add one";
@@ -338,11 +407,14 @@ async function sendMessage() {
     document.getElementById("sendBtn").disabled = true;
 
     try {
-        // Use streaming endpoint
+        // Use streaming endpoint with provider info
+        const provider = getProvider();
+        const model = getModel();
+        const baseUrl = getBaseUrl();
         const response = await fetch(`/api/agents/${currentAgentId}/chat/stream`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ message, api_key: apiKey }),
+            body: JSON.stringify({ message, api_key: apiKey, provider, model, base_url: baseUrl }),
         });
 
         removeTypingIndicator(typingId);
@@ -391,8 +463,13 @@ async function sendMessage() {
     } catch (err) {
         removeTypingIndicator(typingId);
         let errorMsg = err.message;
+        const provider = getProvider();
         if (errorMsg.includes("402") || errorMsg.includes("insufficient_balance") || errorMsg.includes("Insufficient balance")) {
-            errorMsg = "Your 0G Compute API key has insufficient balance. Please add credits at pc.0g.ai and try again.";
+            if (provider === "0g") {
+                errorMsg = "Your 0G Compute API key has insufficient balance. Please add credits at pc.0g.ai and try again.";
+            } else {
+                errorMsg = "Insufficient balance. Please check your provider account and add credits.";
+            }
         }
         appendMessage("error", errorMsg);
     } finally {
@@ -505,6 +582,13 @@ async function showAgentDetails() {
 // ─── Status ─────────────────────────────────────────────────────────
 
 async function checkStatus() {
+    // Show current provider in header
+    const provider = getProvider();
+    const info = PROVIDER_INFO[provider];
+    if (info) {
+        document.querySelector(".header-badge").textContent = info.label;
+    }
+
     try {
         const status = await api("/api/status");
         const dot = document.querySelector(".status-dot");

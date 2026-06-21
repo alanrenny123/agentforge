@@ -1,24 +1,82 @@
-"""0G Compute integration via Router API (OpenAI-compatible)."""
+"""Multi-provider AI Compute integration via OpenAI-compatible APIs.
+
+Supported providers:
+  - 0G Compute (default)
+  - Google AI Studio (Gemini)
+  - OpenAI
+  - Groq
+  - Together AI
+  - Any OpenAI-compatible endpoint (custom)
+"""
 
 import os
-import json
 from openai import OpenAI
 
 
-def get_client(api_key: str = None) -> OpenAI:
-    """Create an OpenAI client pointed at 0G Compute Router.
-    
-    If api_key is provided, use it (per-user key). Otherwise fall back to env var.
+# ─── Provider Registry ────────────────────────────────────────────────────────
+
+PROVIDERS = {
+    "0g": {
+        "name": "0G Compute",
+        "base_url": "https://router-api.0g.ai/v1",
+        "default_model": "zai-org/GLM-5-FP8",
+        "icon": "⛓️",
+    },
+    "google": {
+        "name": "Google AI Studio",
+        "base_url": "https://generativelanguage.googleapis.com/v1beta/openai",
+        "default_model": "gemini-2.0-flash",
+        "icon": "🔷",
+    },
+    "openai": {
+        "name": "OpenAI",
+        "base_url": "https://api.openai.com/v1",
+        "default_model": "gpt-4o-mini",
+        "icon": "🟢",
+    },
+    "groq": {
+        "name": "Groq",
+        "base_url": "https://api.groq.com/openai/v1",
+        "default_model": "llama-3.3-70b-versatile",
+        "icon": "⚡",
+    },
+    "together": {
+        "name": "Together AI",
+        "base_url": "https://api.together.xyz/v1",
+        "default_model": "meta-llama/Llama-3-70b-chat-hf",
+        "icon": "🤝",
+    },
+    "custom": {
+        "name": "Custom (OpenAI-compatible)",
+        "base_url": "",
+        "default_model": "",
+        "icon": "🔧",
+    },
+}
+
+
+def get_client(api_key: str = None, provider: str = "0g", base_url: str = None) -> OpenAI:
+    """Create an OpenAI client for the specified provider.
+
+    All providers use the OpenAI SDK since they expose OpenAI-compatible APIs.
     """
-    return OpenAI(
-        base_url=os.getenv("OG_COMPUTE_BASE_URL", "https://router-api.0g.ai/v1"),
-        api_key=api_key or os.getenv("OG_COMPUTE_API_KEY", ""),
-    )
+    prov = PROVIDERS.get(provider, PROVIDERS["0g"])
+    url = base_url or prov["base_url"]
+    key = api_key or os.getenv("OG_COMPUTE_API_KEY", "")
+    return OpenAI(base_url=url, api_key=key)
 
 
-def list_models() -> list[dict]:
-    """List available models on 0G Compute."""
-    client = get_client()
+def list_providers() -> list[dict]:
+    """Return available providers (safe to send to frontend)."""
+    return [
+        {"id": pid, "name": p["name"], "icon": p["icon"], "default_model": p["default_model"]}
+        for pid, p in PROVIDERS.items()
+    ]
+
+
+def list_models(provider: str = "0g", api_key: str = None) -> list[dict]:
+    """List available models for a provider."""
+    client = get_client(api_key=api_key, provider=provider)
     models = client.models.list()
     return [{"id": m.id, "owned_by": getattr(m, "owned_by", "unknown")} for m in models.data]
 
@@ -26,15 +84,19 @@ def list_models() -> list[dict]:
 def chat_completion(
     system_prompt: str,
     user_message: str,
-    model: str = "zai-org/GLM-5-FP8",
+    model: str = None,
     temperature: float = 0.7,
     max_tokens: int = 2048,
     api_key: str = None,
+    provider: str = "0g",
+    base_url: str = None,
 ) -> str:
-    """Send a chat completion request to 0G Compute."""
-    client = get_client(api_key=api_key)
+    """Send a chat completion request to the specified provider."""
+    prov = PROVIDERS.get(provider, PROVIDERS["0g"])
+    resolved_model = model or prov["default_model"]
+    client = get_client(api_key=api_key, provider=provider, base_url=base_url)
     response = client.chat.completions.create(
-        model=model,
+        model=resolved_model,
         messages=[
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": user_message},
@@ -48,15 +110,19 @@ def chat_completion(
 def chat_completion_streaming(
     system_prompt: str,
     user_message: str,
-    model: str = "zai-org/GLM-5-FP8",
+    model: str = None,
     temperature: float = 0.7,
     max_tokens: int = 2048,
     api_key: str = None,
+    provider: str = "0g",
+    base_url: str = None,
 ):
-    """Stream a chat completion response from 0G Compute."""
-    client = get_client(api_key=api_key)
+    """Stream a chat completion response from the specified provider."""
+    prov = PROVIDERS.get(provider, PROVIDERS["0g"])
+    resolved_model = model or prov["default_model"]
+    client = get_client(api_key=api_key, provider=provider, base_url=base_url)
     stream = client.chat.completions.create(
-        model=model,
+        model=resolved_model,
         messages=[
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": user_message},
@@ -70,21 +136,21 @@ def chat_completion_streaming(
             yield chunk.choices[0].delta.content
 
 
-def test_connection() -> dict:
-    """Test connectivity to 0G Compute Router."""
-    api_key = os.getenv("OG_COMPUTE_API_KEY", "")
+def test_connection(provider: str = "0g", api_key: str = None) -> dict:
+    """Test connectivity to a provider."""
+    prov = PROVIDERS.get(provider, PROVIDERS["0g"])
     if not api_key:
         return {
             "status": "ready",
-            "message": "0G Compute is available. Enter your API key to start chatting.",
-            "endpoint": os.getenv("OG_COMPUTE_BASE_URL", "https://router-api.0g.ai/v1"),
+            "message": f"{prov['name']} is available. Enter your API key to start chatting.",
+            "endpoint": prov["base_url"],
         }
     try:
-        client = get_client()
+        client = get_client(api_key=api_key, provider=provider)
         models = client.models.list()
         return {
             "status": "connected",
-            "endpoint": os.getenv("OG_COMPUTE_BASE_URL", "https://router-api.0g.ai/v1"),
+            "endpoint": prov["base_url"],
             "models_available": len(models.data),
         }
     except Exception as e:
@@ -92,7 +158,7 @@ def test_connection() -> dict:
         if "402" in error_msg or "insufficient_balance" in error_msg:
             return {
                 "status": "ready",
-                "message": "0G Compute is available. Your API key needs credits — add them at pc.0g.ai",
-                "endpoint": os.getenv("OG_COMPUTE_BASE_URL", "https://router-api.0g.ai/v1"),
+                "message": f"{prov['name']} is available. Your API key needs credits.",
+                "endpoint": prov["base_url"],
             }
         return {"status": "error", "error": error_msg}

@@ -132,14 +132,14 @@ def create_agent(
     }
 
 
-def chat_with_agent(agent_id: str, user_message: str, api_key: str = None) -> dict:
+def chat_with_agent(agent_id: str, user_message: str, api_key: str = None, provider: str = "0g", base_url: str = None, model_override: str = None) -> dict:
     """
     Send a message to an agent and get a response.
     
     1. Load agent config from 0G Storage
     2. Load recent memory
     3. Build context-aware system prompt
-    4. Send to 0G Compute for inference
+    4. Send to AI provider for inference
     5. Store the interaction in memory
     """
     # Load agent config
@@ -166,13 +166,16 @@ def chat_with_agent(agent_id: str, user_message: str, api_key: str = None) -> di
         f"{memory_context}"
     )
 
-    # Get response from 0G Compute
+    # Get response from AI provider
+    resolved_model = model_override or config.get("model")
     try:
         response = compute.chat_completion(
             system_prompt=full_system_prompt,
             user_message=user_message,
-            model=config.get("model", "zai-org/GLM-5-FP8"),
+            model=resolved_model,
             api_key=api_key,
+            provider=provider,
+            base_url=base_url,
         )
     except Exception as e:
         return {"status": "error", "error": f"Compute error: {str(e)}"}
@@ -181,7 +184,7 @@ def chat_with_agent(agent_id: str, user_message: str, api_key: str = None) -> di
     storage.store_agent_memory(agent_id, {
         "user_message": user_message,
         "agent_response": response,
-        "model": config.get("model", "zai-org/GLM-5-FP8"),
+        "model": resolved_model or "default",
     })
 
     return {
@@ -189,11 +192,11 @@ def chat_with_agent(agent_id: str, user_message: str, api_key: str = None) -> di
         "agent_id": agent_id,
         "agent_name": config["name"],
         "response": response,
-        "model": config.get("model", "zai-org/GLM-5-FP8"),
+        "model": resolved_model or "default",
     }
 
 
-def chat_with_agent_streaming(agent_id: str, user_message: str, api_key: str = None):
+def chat_with_agent_streaming(agent_id: str, user_message: str, api_key: str = None, provider: str = "0g", base_url: str = None, model_override: str = None):
     """Stream a response from an agent. Yields chunks of text."""
     stored = storage.load_agent_config(agent_id)
     if not stored:
@@ -217,12 +220,15 @@ def chat_with_agent_streaming(agent_id: str, user_message: str, api_key: str = N
     )
 
     full_response = ""
+    resolved_model = model_override or config.get("model")
     try:
         for chunk in compute.chat_completion_streaming(
             system_prompt=full_system_prompt,
             user_message=user_message,
-            model=config.get("model", "zai-org/GLM-5-FP8"),
+            model=resolved_model,
             api_key=api_key,
+            provider=provider,
+            base_url=base_url,
         ):
             full_response += chunk
             yield chunk
@@ -233,7 +239,7 @@ def chat_with_agent_streaming(agent_id: str, user_message: str, api_key: str = N
     storage.store_agent_memory(agent_id, {
         "user_message": user_message,
         "agent_response": full_response,
-        "model": config.get("model", "zai-org/GLM-5-FP8"),
+        "model": resolved_model or "default",
     })
 
 
