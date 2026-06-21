@@ -167,12 +167,14 @@ def chat_with_agent(agent_id: str, user_message: str, api_key: str = None, provi
     )
 
     # Get response from AI provider
-    resolved_model = model_override or config.get("model")
+    # Only use explicit model_override; let compute layer use provider's default otherwise.
+    # Agent config's stored model (e.g. "zai-org/GLM-5-FP8") is 0G-specific and
+    # would cause "invalid model ID" on other providers.
     try:
         response = compute.chat_completion(
             system_prompt=full_system_prompt,
             user_message=user_message,
-            model=resolved_model,
+            model=model_override,
             api_key=api_key,
             provider=provider,
             base_url=base_url,
@@ -184,7 +186,7 @@ def chat_with_agent(agent_id: str, user_message: str, api_key: str = None, provi
     storage.store_agent_memory(agent_id, {
         "user_message": user_message,
         "agent_response": response,
-        "model": resolved_model or "default",
+        "model": model_override or "provider-default",
     })
 
     return {
@@ -192,7 +194,7 @@ def chat_with_agent(agent_id: str, user_message: str, api_key: str = None, provi
         "agent_id": agent_id,
         "agent_name": config["name"],
         "response": response,
-        "model": resolved_model or "default",
+        "model": model_override or "provider-default",
     }
 
 
@@ -220,12 +222,11 @@ def chat_with_agent_streaming(agent_id: str, user_message: str, api_key: str = N
     )
 
     full_response = ""
-    resolved_model = model_override or config.get("model")
     try:
         for chunk in compute.chat_completion_streaming(
             system_prompt=full_system_prompt,
             user_message=user_message,
-            model=resolved_model,
+            model=model_override,
             api_key=api_key,
             provider=provider,
             base_url=base_url,
@@ -239,7 +240,7 @@ def chat_with_agent_streaming(agent_id: str, user_message: str, api_key: str = N
     storage.store_agent_memory(agent_id, {
         "user_message": user_message,
         "agent_response": full_response,
-        "model": resolved_model or "default",
+        "model": model_override or "provider-default",
     })
 
 

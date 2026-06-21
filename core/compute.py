@@ -2,10 +2,9 @@
 
 Supported providers:
   - 0G Compute (default)
-  - Google AI Studio (Gemini)
+  - OpenRouter
   - OpenAI
-  - Groq
-  - Together AI
+  - Anthropic
   - Any OpenAI-compatible endpoint (custom)
 """
 
@@ -22,11 +21,11 @@ PROVIDERS = {
         "default_model": "zai-org/GLM-5-FP8",
         "icon": "⛓️",
     },
-    "google": {
-        "name": "Google AI Studio",
-        "base_url": "https://generativelanguage.googleapis.com/v1beta/openai",
-        "default_model": "gemini-2.0-flash",
-        "icon": "🔷",
+    "openrouter": {
+        "name": "OpenRouter",
+        "base_url": "https://openrouter.ai/api/v1",
+        "default_model": "openai/gpt-4o-mini",
+        "icon": "🔀",
     },
     "openai": {
         "name": "OpenAI",
@@ -34,17 +33,11 @@ PROVIDERS = {
         "default_model": "gpt-4o-mini",
         "icon": "🟢",
     },
-    "groq": {
-        "name": "Groq",
-        "base_url": "https://api.groq.com/openai/v1",
-        "default_model": "llama-3.3-70b-versatile",
-        "icon": "⚡",
-    },
-    "together": {
-        "name": "Together AI",
-        "base_url": "https://api.together.xyz/v1",
-        "default_model": "meta-llama/Llama-3-70b-chat-hf",
-        "icon": "🤝",
+    "anthropic": {
+        "name": "Anthropic",
+        "base_url": "https://api.anthropic.com/v1/",
+        "default_model": "claude-sonnet-4-20250514",
+        "icon": "🟠",
     },
     "custom": {
         "name": "Custom (OpenAI-compatible)",
